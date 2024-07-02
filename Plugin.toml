@@ -1,3 +1,17 @@
-[package]
+[config]
+schema = "1.0.0"
+url = "https://raw.githubusercontent.com/Wrench56/A-SSH/main/Plugin.toml"
+
+[plugin]
 name = "A-SSH"
 version = "0.0.1"
+zip_url = "https://github.com/Wrench56/A-SSH/archive/refs/heads/main.zip"
+
+[directories]
+backend = "src/backend"
+frontend = "src/frontend"
+
+[dependencies]
+[dependencies.python]
+version = "^3.7.0"
+requirements_file = "./requirements.txt"
