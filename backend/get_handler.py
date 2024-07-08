@@ -4,7 +4,7 @@ from api import expose
 
 
 def init() -> None:
-    expose.subscribe_get(callback_print)
+    expose.subscribe_get('/**', callback_print)
 
 
 def callback_print(endpoint: str, request: Request) -> None:
