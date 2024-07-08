@@ -4,8 +4,8 @@ from api import expose, serve
 
 
 def init() -> None:
-    expose.subscribe_get('/fullscreen', callback_print)
+    expose.subscribe_get('/fullscreen', fullscreen)
 
 
-async def callback_print(_: str, __: Request) -> None:
-    return serve.page('fullscreen')
+async def fullscreen(_: str, __: Request) -> None:
+    return await serve.page('fullscreen')
