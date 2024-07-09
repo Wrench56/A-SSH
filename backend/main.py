@@ -1,10 +1,11 @@
 from plugins import base_plugin
-from plugins.plugins.A_SSH.backend import fullscreen
+from plugins.plugins.A_SSH.backend import ssh, ui
 
 
 class Plugin(base_plugin.Plugin):
     def load(self) -> bool:
-        fullscreen.init()
+        ui.fullscreen.init()
+        ssh.service.init()
         return True
 
     def unload(self) -> bool:
