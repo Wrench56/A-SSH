@@ -1,15 +1,16 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { Terminal } from "@xterm/xterm";
-  import { FitAddon } from "@xterm/addon-fit";
 
   let socket: WebSocket;
-  let terminal: Terminal;
+
   let terminalContainer: HTMLElement;
 
-  onMount(() => {
+  onMount(async () => {
+    const { Terminal } = await import("@xterm/xterm");
+    const { FitAddon } = await import("@xterm/addon-fit");
+
     /* Initialize xterm.js terminal */
-    terminal = new Terminal();
+    let terminal = new Terminal();
     const fitAddon = new FitAddon();
     terminal.loadAddon(fitAddon);
     terminal.open(terminalContainer);
