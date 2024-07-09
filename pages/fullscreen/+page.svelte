@@ -1,8 +1,9 @@
 <script lang="ts">
-  
+  import SSHContainer from "$lib/plugins/A_SSH/SSHContainer.svelte";
 </script>
 
-<p>Hello World</p>
+<p>A-SSH</p>
+<SSHContainer />
 
 <style>
   :root {
