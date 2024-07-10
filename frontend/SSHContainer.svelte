@@ -1,49 +1,43 @@
 <script lang="ts">
   import { onMount } from "svelte";
+  import { AnsiUp } from "ansi_up";
+
+  const ansiUp = new AnsiUp();
 
   let socket: WebSocket;
+  let terminal: HTMLElement;
 
-  let terminalContainer: HTMLElement;
-
-  onMount(async () => {
-    const { Terminal } = await import("@xterm/xterm");
-    const { FitAddon } = await import("@xterm/addon-fit");
-
-    /* Initialize xterm.js terminal */
-    let terminal = new Terminal();
-    const fitAddon = new FitAddon();
-    terminal.loadAddon(fitAddon);
-    terminal.open(terminalContainer);
-    fitAddon.fit();
-
+  onMount(() => async () => {
     /* Initialize WebSocket connection */
     socket = new WebSocket(
-      `ws://${window.location.host}/plugins/api/A_SSH/ssh/`
+      `ws://${window.location.host}/plugins/wsapi/A_SSH/ssh`
     );
 
     socket.onmessage = function (event: MessageEvent) {
-      terminal.write(event.data + "\r\n");
+      terminal.innerHTML += ansiUp.ansi_to_html(event.data);
     };
 
-    /* Cleanup WebSocket and xterm.js on component destruction */
+    /* Cleanup WebSocket on component destruction */
     return () => {
       if (socket && socket.readyState === WebSocket.OPEN) {
         socket.close();
       }
-      terminal.dispose();
     };
   });
 
-  function sendMessage() {
-    const message = { text: "echo \"Hello from client!\"" };
-    socket.send(JSON.stringify(message));
+  function onKeyDown(e: KeyboardEvent) {
+    if (socket == undefined) {
+      return;
+    }
+
+    socket.send(e.key);
   }
 </script>
 
-<main>
-  <h1>SSH Terminal</h1>
+<svelte:window on:keydown|preventDefault={onKeyDown} />
 
-  <div bind:this={terminalContainer} id="terminal-container"></div>
+<main>
+  <pre bind:this={terminal} id="terminal"></pre>
 </main>
 
 <style>
@@ -55,9 +49,11 @@
     justify-content: center;
   }
 
-  #terminal-container {
+  #terminal {
     width: 100%;
     height: 100%;
-    border: 1px solid #ccc;
+    border: 1px solid whitesmoke;
+    font-family: monaco, Consolas, "Lucida Console", monospace;
+    color: whitesmoke;
   }
 </style>
