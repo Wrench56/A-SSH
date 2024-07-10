@@ -1,3 +1,5 @@
+from typing import Generator
+
 import paramiko
 
 
@@ -12,9 +14,14 @@ class SSHClient:
         self.client.connect(hostname, port, username, password)
         self.channel = self.client.invoke_shell()
 
-    def run_command(self, command: str) -> bytes:
-        _, stdout, _ = self.channel.exec_command(command)
-        return stdout.read()
+    def run_command(self, command: str) -> Generator[bytes, None, None]:
+        if self.channel.send_ready():
+            self.channel.sendall(command.encode())
+        while self.channel.recv_ready():
+            yield self.channel.recv()
+            return
+        yield b'Error: Channel not send-ready'
+        return
 
     def close(self):
         self.client.close()
