@@ -43,7 +43,9 @@
   }
 </script>
 
-<LoginPopup {socket} onClose={() => (enabled = true)} />
+{#if !enabled}
+  <LoginPopup {socket} onClose={() => (enabled = true)} />
+{/if}
 <main>
   <pre bind:this={terminal} id="terminal"></pre>
   <input
@@ -62,12 +64,13 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    overflow: hidden;
   }
 
   #terminal {
-    width: 100%;
+    width: 90%;
     height: 80%;
-    overflow-y: auto; /* Enable vertical scrolling */
+    overflow-y: auto;
     border: 1px solid whitesmoke;
     font-family: monaco, Consolas, "Lucida Console", monospace;
     color: whitesmoke;
@@ -76,18 +79,18 @@
   }
 
   input {
-    width: 100%;
+    width: 90%;
     padding: 8px;
     font-size: 14px;
     border: 1px solid #ccc;
     border-radius: 4px;
     background-color: #f2f2f2;
     color: #333;
-    box-sizing: border-box; /* Ensure padding is included in width */
+    box-sizing: border-box;
   }
 
   input:focus {
     outline: none;
-    border-color: #007bff; /* Highlight when focused */
+    border-color: #007bff;
   }
 </style>
