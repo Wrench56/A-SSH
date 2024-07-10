@@ -42,10 +42,11 @@
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
-    background-color: #fff;
+    background-color: #000000;
     padding: 20px;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-    border-radius: 5px;
+    box-shadow: 0 0 10px rgb(45, 45, 45);
+    border: 1px solid whitesmoke;
+    border-radius: 6px;
     z-index: 1000;
   }
 
