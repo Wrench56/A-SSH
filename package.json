@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "SSH Plugin for ArgusDash",
   "dependencies": {
-    "@xterm/addon-fit": "^0.10.0",
-    "@xterm/xterm": "^5.5.0"
+    "ansi_up": "^6.0.2"
   }
 }
