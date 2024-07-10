@@ -21,7 +21,7 @@ async def service(_: str, websocket: WebSocket) -> None:
     while True:
         try:
             cmd = await websocket.receive_text()
-            result = ssh_client.enter_key(cmd)
+            result = ssh_client.run_command(cmd)
             await websocket.send_text(result.decode('utf-8'))
         except WebSocketDisconnect:
             ssh_client.close()
