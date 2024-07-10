@@ -4,6 +4,7 @@ import logging
 from api import expose
 
 from plugins.plugins.A_SSH.backend.ssh import client
+from plugins.plugins.A_SSH.backend.ssh import login
 
 
 def init() -> None:
@@ -11,16 +12,16 @@ def init() -> None:
 
 
 async def service(_: str, websocket: WebSocket) -> None:
-    ssh_client = client.SSHClientWrapper()
+    ssh_client = client.SSHClient()
     await websocket.accept()
-    await websocket.send_text('Welcome to A-SSH!\nPlease provide host and credentials\n>>>')
-    # Login
-    host, port, username, password = await websocket.receive_text().split(',')
-    ssh_client.connect(host, port, username, password)
+    await websocket.send_text('Welcome to A-SSH!\n')
+    data = await websocket.receive_json()
+    host, port, un, pw = await login.parse(data)
+    ssh_client.connect(host, port, un, pw)
     while True:
         try:
-            data = await websocket.receive_text()
-            result = ssh_client.run_command(data)
+            cmd = await websocket.receive_text()
+            result = ssh_client.enter_key(cmd)
             await websocket.send_text(result.decode('utf-8'))
         except WebSocketDisconnect:
             ssh_client.close()
