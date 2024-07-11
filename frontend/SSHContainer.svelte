@@ -23,6 +23,7 @@
 
       let ansi_text = sanitizeData(event.data);
       terminal.innerHTML += ansiUp.ansi_to_html(ansi_text);
+      terminal.scroll({ top: terminal.scrollHeight, behavior: "smooth" });
     };
 
     /* Cleanup WebSocket on component destruction */
