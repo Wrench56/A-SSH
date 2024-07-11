@@ -20,7 +20,9 @@
       if (!enabled) {
         return;
       }
-      terminal.innerHTML += ansiUp.ansi_to_html(event.data);
+
+      let ansi_text = sanitizeData(event.data);
+      terminal.innerHTML += ansiUp.ansi_to_html(ansi_text);
     };
 
     /* Cleanup WebSocket on component destruction */
@@ -32,14 +34,45 @@
   });
 
   function handleKeyPress(event: KeyboardEvent) {
-    if (event.key === "Enter") {
-      const command = commandInput.value.trim();
-      if (command !== "") {
-        socket.send(command);
-        /* Clean the input field */
-        commandInput.value = "";
+    if (event.key == "Enter" || event.key.length == 1) {
+      socket.send(event.key);
+    }
+  }
+
+  function sanitizeData(text: string): string {
+    const ansiEscapeRegex = /\x1b\[80C/g;
+    console.log(ansiEscapeRegex.test(text));
+    let output = "";
+    for (let char of text) {
+      if (char === "\x00") {
+        /* NULL character */
+        continue;
+      } else if (char === "\x07") {
+        /* BEL character */
+        continue;
+      } else if (char === "\b") {
+        /* Simulate backspace behavior */
+        output = output.slice(0, -1);
+        terminal.removeChild(terminal.lastElementChild);
+      } else {
+        output += char;
       }
     }
+
+    return output;
+  }
+
+  function getCharWidth() {
+    // Create a temporary element to measure the width of a single character
+    const tempSpan = document.createElement("span");
+    tempSpan.style.fontFamily = "monospace";
+    tempSpan.style.visibility = "hidden";
+    tempSpan.style.whiteSpace = "nowrap";
+    tempSpan.textContent = "M"; // Using "M" as a reference character
+    document.body.appendChild(tempSpan);
+    const charWidth = tempSpan.offsetWidth;
+    document.body.removeChild(tempSpan);
+    return charWidth;
   }
 </script>
 
@@ -58,6 +91,13 @@
 </main>
 
 <style>
+  @font-face {
+    font-family: "FiraCodeNerdFont";
+    src: url("/plugins/api/A_SSH/nerdfont") format("truetype");
+    font-weight: normal;
+    font-style: normal;
+  }
+
   main {
     height: 90vh;
     display: flex;
@@ -72,7 +112,8 @@
     height: 80%;
     overflow-y: auto;
     border: 1px solid whitesmoke;
-    font-family: monaco, Consolas, "Lucida Console", monospace;
+    font-family: "FiraCodeNerdFont", monaco, Consolas, "Lucida Console",
+      monospace;
     color: whitesmoke;
     padding: 10px;
     background-color: #1e1e1e;
