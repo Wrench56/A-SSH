@@ -1,5 +1,5 @@
 from plugins import base_plugin
-from plugins.plugins.A_SSH.backend.ui import fullscreen
+from plugins.plugins.A_SSH.backend.ui import fullscreen, nerdfont
 from plugins.plugins.A_SSH.backend.ssh import service
 
 
@@ -7,6 +7,7 @@ class Plugin(base_plugin.Plugin):
     def load(self) -> bool:
         fullscreen.init()
         service.init()
+        nerdfont.init()
         return True
 
     def unload(self) -> bool:
