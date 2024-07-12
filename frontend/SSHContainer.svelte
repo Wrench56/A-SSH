@@ -1,14 +1,76 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import { AnsiUp } from "ansi_up";
   import LoginPopup from "./LoginPopup.svelte";
-
-  const ansiUp = new AnsiUp();
+  import {
+    type FitAddon,
+    type ITerminalOptions,
+    type ITerminalInitOnlyOptions,
+    type Terminal,
+    XtermAddon,
+    Xterm,
+  } from "@battlefieldduck/xterm-svelte";
 
   let socket: WebSocket;
-  let terminal: HTMLElement;
-  let commandInput: HTMLInputElement;
   let enabled: boolean = false;
+  let container: HTMLDivElement;
+  let terminal: Terminal;
+  let fitAddon: FitAddon;
+
+  let options: ITerminalOptions & ITerminalInitOnlyOptions = {
+    fontFamily: "FiraCodeNerdFont",
+    fontSize: 15,
+    customGlyphs: false,
+  };
+
+  function calculateRows() {
+    const dummy = document.createElement("div");
+    dummy.textContent = "M";
+
+    const computedStyle = getComputedStyle(container);
+    dummy.style.fontFamily = computedStyle.fontFamily;
+    dummy.style.fontSize = computedStyle.fontSize;
+    dummy.style.position = "absolute";
+
+    document.body.appendChild(dummy);
+    const rowHeight = dummy.offsetHeight;
+    document.body.removeChild(dummy);
+
+    return Math.floor(window.innerHeight / rowHeight) - 2;
+  }
+
+  async function onLoad(event: CustomEvent<{ terminal: Terminal }>) {
+    terminal = event.detail.terminal;
+
+    /* FitAddon Usage */
+    fitAddon = new (await XtermAddon.FitAddon()).FitAddon();
+    const webLinksAddon = new (
+      await XtermAddon.WebLinksAddon()
+    ).WebLinksAddon();
+    terminal.loadAddon(fitAddon);
+    terminal.loadAddon(webLinksAddon);
+    terminal.write("\rLoading A-SSH...\r\n");
+    terminal.write("Waiting for login\r\n");
+    terminal.onResize(({ cols, rows }) => {
+      if (!enabled) {
+        return;
+      }
+
+      if (socket !== undefined && socket.OPEN) {
+        socket.send(JSON.stringify({ type: "RESIZE", cols: cols, rows: rows }));
+      }
+    });
+
+    terminal.resize(terminal.cols, calculateRows());
+    fitAddon.fit();
+  }
+
+  function onKey(event: CustomEvent<{ key: string; domEvent: KeyboardEvent }>) {
+    if (!enabled) {
+      return;
+    }
+
+    socket.send(JSON.stringify({ type: "KEY", key: event.detail.key }));
+  }
 
   onMount(() => {
     /* Initialize WebSocket connection */
@@ -16,15 +78,21 @@
       `ws://${window.location.host}/plugins/wsapi/A_SSH/ssh`
     );
 
+    /* Incoming data from SSH */
     socket.onmessage = function (event: MessageEvent) {
       if (!enabled) {
         return;
       }
 
-      let ansi_text = sanitizeData(event.data);
-      terminal.innerHTML += ansiUp.ansi_to_html(ansi_text);
-      terminal.scroll({ top: terminal.scrollHeight, behavior: "smooth" });
+      terminal.write(event.data);
+      terminal.scrollToBottom();
     };
+
+    /* Resize terminal */
+    window.addEventListener("resize", () => {
+      terminal.resize(terminal.cols, calculateRows());
+      fitAddon.fit();
+    });
 
     /* Cleanup WebSocket on component destruction */
     return () => {
@@ -33,63 +101,27 @@
       }
     };
   });
-
-  function handleKeyPress(event: KeyboardEvent) {
-    if (event.key == "Enter" || event.key.length == 1) {
-      socket.send(event.key);
-    }
-  }
-
-  function sanitizeData(text: string): string {
-    const ansiEscapeRegex = /\x1b\[80C/g;
-    console.log(ansiEscapeRegex.test(text));
-    let output = "";
-    for (let char of text) {
-      if (char === "\x00") {
-        /* NULL character */
-        continue;
-      } else if (char === "\x07") {
-        /* BEL character */
-        continue;
-      } else if (char === "\b") {
-        /* Simulate backspace behavior */
-        output = output.slice(0, -1);
-        terminal.removeChild(terminal.lastElementChild);
-      } else {
-        output += char;
-      }
-    }
-
-    return output;
-  }
-
-  function getCharWidth() {
-    // Create a temporary element to measure the width of a single character
-    const tempSpan = document.createElement("span");
-    tempSpan.style.fontFamily = "monospace";
-    tempSpan.style.visibility = "hidden";
-    tempSpan.style.whiteSpace = "nowrap";
-    tempSpan.textContent = "M"; // Using "M" as a reference character
-    document.body.appendChild(tempSpan);
-    const charWidth = tempSpan.offsetWidth;
-    document.body.removeChild(tempSpan);
-    return charWidth;
-  }
 </script>
 
 {#if !enabled}
-  <LoginPopup {socket} onClose={() => (enabled = true)} />
-{/if}
-<main>
-  <pre bind:this={terminal} id="terminal"></pre>
-  <input
-    type="text"
-    disabled={!enabled}
-    bind:this={commandInput}
-    placeholder="Enter command"
-    on:keypress={handleKeyPress}
+  <LoginPopup
+    {socket}
+    onClose={() => {
+      enabled = true;
+      socket.send(
+        JSON.stringify({
+          type: "RESIZE",
+          cols: terminal.cols,
+          rows: terminal.rows,
+        })
+      );
+    }}
   />
-</main>
+{/if}
+
+<div bind:this={container} id="terminal-container">
+  <Xterm {options} on:load={onLoad} on:key={onKey} />
+</div>
 
 <style>
   @font-face {
@@ -99,40 +131,13 @@
     font-style: normal;
   }
 
-  main {
-    height: 90vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    overflow: hidden;
-  }
-
-  #terminal {
-    width: 90%;
-    height: 80%;
-    overflow-y: auto;
-    border: 1px solid whitesmoke;
-    font-family: "FiraCodeNerdFont", monaco, Consolas, "Lucida Console",
-      monospace;
-    color: whitesmoke;
-    padding: 10px;
-    background-color: #1e1e1e;
-  }
-
-  input {
-    width: 90%;
-    padding: 8px;
-    font-size: 14px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    background-color: #f2f2f2;
-    color: #333;
-    box-sizing: border-box;
-  }
-
-  input:focus {
-    outline: none;
-    border-color: #007bff;
+  #terminal-container {
+    display: block;
+    width: calc(100% - 1px);
+    margin: 0 auto;
+    padding: 2px;
+    height: calc(100% - 1px);
+    font-family: "FiraCodeNerdFont";
+    font-size: 15px;
   }
 </style>

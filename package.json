@@ -3,6 +3,6 @@
   "version": "1.0.0",
   "description": "SSH Plugin for ArgusDash",
   "dependencies": {
-    "ansi_up": "^6.0.2"
+    "@battlefieldduck/xterm-svelte": "^1.0.0"
   }
 }
