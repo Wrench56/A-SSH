@@ -1,10 +1,13 @@
+import asyncio
 from fastapi import WebSocket, WebSocketDisconnect
 import logging
 
 from api import expose
 
-from plugins.plugins.A_SSH.backend.ssh import client
-from plugins.plugins.A_SSH.backend.ssh import login
+from plugins.plugins.A_SSH.backend.ssh import client, login
+
+
+TIMEOUT = 1/30
 
 
 def init() -> None:
@@ -18,12 +21,33 @@ async def service(_: str, websocket: WebSocket) -> None:
     data = await websocket.receive_json()
     host, port, un, pw = await login.parse(data)
     ssh_client.connect(host, port, un, pw)
+
+    # Initial terminal size
+    dims = await websocket.receive_json()
+    ssh_client.shell(int(dims.get('cols')), int(dims.get('rows')))
+
     while True:
         try:
-            cmd = await websocket.receive_text()
-            for data in ssh_client.run_command(cmd):
-                await websocket.send_text(data.decode('utf-8'))
+            data = await asyncio.wait_for(websocket.receive_json(), timeout=TIMEOUT)
+            type_ = data.get('type')
+            if type_ == 'KEY':
+                key = data.get('key')
+                ssh_client.enter_key(key)
+            elif type_ == 'RESIZE':
+                # TODO: Support resize
+                pass
+
+            await _send_data(ssh_client, websocket)
+        except asyncio.TimeoutError:
+            # No input from frontend
+            await _send_data(ssh_client, websocket)
         except WebSocketDisconnect:
             ssh_client.close()
             logging.info('WebSocket disconnected')
             break
+
+
+async def _send_data(sshc: client.SSHClient, ws: WebSocket) -> None:
+    async for data in sshc.fetch_console():
+        print(data)
+        await ws.send_text(data.decode('utf-8'))
