@@ -49,5 +49,4 @@ async def service(_: str, websocket: WebSocket) -> None:
 
 async def _send_data(sshc: client.SSHClient, ws: WebSocket) -> None:
     async for data in sshc.fetch_console():
-        print(data)
         await ws.send_text(data.decode('utf-8'))

@@ -4,7 +4,7 @@ url = "https://raw.githubusercontent.com/Wrench56/A-SSH/main/Plugin.toml"
 
 [plugin]
 name = "A-SSH"
-version = "1.0.0"
+version = "1.0.1"
 zip_url = "https://github.com/Wrench56/A-SSH/archive/refs/heads/main.zip"
 
 [directories]
