@@ -1,6 +1,6 @@
 {
   "name": "@wrench56/a-ssh",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "SSH Plugin for ArgusDash",
   "dependencies": {
     "@battlefieldduck/xterm-svelte": "^1.0.0"
